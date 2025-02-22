@@ -1,6 +1,6 @@
 # Samsung Health GraphRAG
 <p align="center">
-    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/graphrag-samsunghealth.png" alt="Project Logo" />
+    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/graphrag-samsunghealth.png" alt="Project Logo" width="50%" />
 </p>
 
 
