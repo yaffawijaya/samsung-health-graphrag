@@ -1,6 +1,8 @@
 # Samsung Health GraphRAG
+<p align="center">
+    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/graphrag-samsunghealth.png" alt="Project Logo" />
+</p>
 
-![Project Logo](https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/graphrag-samsunghealth.png)
 
 ## Overview
 **Samsung Health GraphRAG** is a Data Science project developed as part of **Data Science Project 2025**, completed by **Group 1**. This project integrates **Samsung Health data** with **Graph-based Retrieval-Augmented Generation (GraphRAG)** to enable structured and unstructured health data analysis.
