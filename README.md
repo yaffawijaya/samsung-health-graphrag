@@ -45,6 +45,10 @@ OPENAI_API_KEY=sk-proj
 NEO4J_URI=bolt://neo4j:portnumber
 NEO4J_USERNAME=username
 NEO4J_PASSWORD=userpass
+MYSQL_HOST=mysql
+MYSQL_USER=root
+MYSQL_PASSWORD=secret
+MYSQL_DATABASE=app
 ```
 
 ### 3. Install Dependencies (REQUIREMENT NOT READY YET)
@@ -98,6 +102,12 @@ The Streamlit app functions smoothly, with a clear dropdown for user selection a
 
 **Overall:**
 The GraphRAG system shows strong potential for providing health insights from Samsung Health data. While food data is retrieved accurately, further work is needed to enhance the retrieval accuracy for water, sleep, and steps. Future improvements will focus on refining entity extraction and query filtering.
+
+## Future Development
+
+- **Interactive Dashboard User Report**: PIC dapa, hasna
+- **Retrieval Refinement**: PIC yaffa
+- **Seamless Data Cleaning Process**: PIC hijrah
 
 ## Contact & Support
 For any questions, feel free to open an issue on GitHub or reach out to **yaffazka@gmail.com**.
