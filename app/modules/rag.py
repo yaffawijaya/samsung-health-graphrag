@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import List
 from pydantic import BaseModel
 from langchain_community.graphs import Neo4jGraph
@@ -12,10 +13,50 @@ class HealthEntities(BaseModel):
     names: List[str]
 
 def extract_date(text: str) -> str:
-    """Extract a date in YYYY-MM-DD format from the text, if present."""
+    """Extract a full date in YYYY-MM-DD format from the text, if present."""
     match = re.search(r'\d{4}-\d{2}-\d{2}', text)
     if match:
         return match.group(0)
+    return None
+
+def extract_month_year(text: str):
+    """Extract a month and year from the text (e.g., 'January 2025') and return start and end dates."""
+    months = {
+        "january": "01", "february": "02", "march": "03", "april": "04",
+        "may": "05", "june": "06", "july": "07", "august": "08",
+        "september": "09", "october": "10", "november": "11", "december": "12"
+    }
+    pattern = re.compile(r'\b(' + '|'.join(months.keys()) + r')\s+(\d{4})', re.IGNORECASE)
+    match = pattern.search(text)
+    if match:
+        month_name = match.group(1).lower()
+        year = match.group(2)
+        month = months[month_name]
+        start_date = f"{year}-{month}-01"
+        # Calculate next month for end_date
+        m = int(month)
+        y = int(year)
+        if m == 12:
+            next_month = 1
+            next_year = y + 1
+        else:
+            next_month = m + 1
+            next_year = y
+        end_date = f"{next_year}-{next_month:02d}-01"
+        return start_date, end_date
+    return None, None
+
+def extract_measurement_type(text: str) -> str:
+    """Return a measurement type (Food, Water, Sleep, Step) if its keyword is found in the text."""
+    q = text.lower()
+    if "food" in q or "eat" in q:
+        return "Food"
+    if "water" in q or "drink" in q:
+        return "Water"
+    if "sleep" in q:
+        return "Sleep"
+    if "step" in q or "walk" in q:
+        return "Step"
     return None
 
 class HealthGraphRAG():
@@ -44,23 +85,63 @@ class HealthGraphRAG():
     def structured_health_retriever(self, question: str) -> str:
         """
         Retrieves structured health insights from the knowledge graph.
-        If the question includes a date (in YYYY-MM-DD format), the query is refined to filter nodes by their recordedOn property.
+        If the question includes a full date or a month–year, the query is refined accordingly.
+        Optionally, if a measurement type is detected, the query will filter by that label.
         """
         entity_chain = self.create_health_entity_chain()
         entities = entity_chain.invoke({"question": question})
         
-        # Try to extract a date from the question.
-        date_str = extract_date(question)
+        full_date = extract_date(question)
+        start_date, end_date = extract_month_year(question)
+        meas_type = extract_measurement_type(question)
         
         result = ""
         for entity in entities.names:
             regex_query = self.generate_health_query(entity)
-            if date_str:
+            # Build different queries based on available date and measurement type information
+            if meas_type and full_date:
+                query_text = f"""
+                MATCH (n:{meas_type})
+                WHERE n.recordedOn = date($date)
+                  AND n.name =~ $query
+                WITH n
+                CALL {{
+                    WITH n
+                    MATCH (n)-[r]->(neighbor)
+                    RETURN n.name + ' - ' + type(r) + ' -> ' + neighbor.name AS output
+                    UNION ALL
+                    WITH n
+                    MATCH (n)<-[r]-(neighbor)
+                    RETURN neighbor.name + ' - ' + type(r) + ' -> ' + n.name AS output
+                }}
+                RETURN output LIMIT 50
+                """
+                params = {"query": regex_query, "date": full_date}
+            elif meas_type and start_date and end_date:
+                query_text = f"""
+                MATCH (n:{meas_type})
+                WHERE n.recordedOn >= date($start_date)
+                  AND n.recordedOn < date($end_date)
+                  AND n.name =~ $query
+                WITH n
+                CALL {{
+                    WITH n
+                    MATCH (n)-[r]->(neighbor)
+                    RETURN n.name + ' - ' + type(r) + ' -> ' + neighbor.name AS output
+                    UNION ALL
+                    WITH n
+                    MATCH (n)<-[r]-(neighbor)
+                    RETURN neighbor.name + ' - ' + type(r) + ' -> ' + n.name AS output
+                }}
+                RETURN output LIMIT 50
+                """
+                params = {"query": regex_query, "start_date": start_date, "end_date": end_date}
+            elif full_date:
                 query_text = """
                 MATCH (n)
                 WHERE (n:Food OR n:Water OR n:Sleep OR n:Step)
-                  AND n.name =~ $query
                   AND n.recordedOn = date($date)
+                  AND n.name =~ $query
                 WITH n
                 CALL {
                     WITH n
@@ -73,7 +154,44 @@ class HealthGraphRAG():
                 }
                 RETURN output LIMIT 50
                 """
-                params = {"query": regex_query, "date": date_str}
+                params = {"query": regex_query, "date": full_date}
+            elif start_date and end_date:
+                query_text = """
+                MATCH (n)
+                WHERE (n:Food OR n:Water OR n:Sleep OR n:Step)
+                  AND n.recordedOn >= date($start_date)
+                  AND n.recordedOn < date($end_date)
+                  AND n.name =~ $query
+                WITH n
+                CALL {
+                    WITH n
+                    MATCH (n)-[r]->(neighbor)
+                    RETURN n.name + ' - ' + type(r) + ' -> ' + neighbor.name AS output
+                    UNION ALL
+                    WITH n
+                    MATCH (n)<-[r]-(neighbor)
+                    RETURN neighbor.name + ' - ' + type(r) + ' -> ' + n.name AS output
+                }
+                RETURN output LIMIT 50
+                """
+                params = {"query": regex_query, "start_date": start_date, "end_date": end_date}
+            elif meas_type:
+                query_text = f"""
+                MATCH (n:{meas_type})
+                WHERE n.name =~ $query
+                WITH n
+                CALL {{
+                    WITH n
+                    MATCH (n)-[r]->(neighbor)
+                    RETURN n.name + ' - ' + type(r) + ' -> ' + neighbor.name AS output
+                    UNION ALL
+                    WITH n
+                    MATCH (n)<-[r]-(neighbor)
+                    RETURN neighbor.name + ' - ' + type(r) + ' -> ' + n.name AS output
+                }}
+                RETURN output LIMIT 50
+                """
+                params = {"query": regex_query}
             else:
                 query_text = """
                 MATCH (n)
