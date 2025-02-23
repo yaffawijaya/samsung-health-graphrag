@@ -5,8 +5,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
-from app.modules.rag import HealthGraphRAG
-from app.modules.graph_construction import HealthGraphBuilder
+from modules.rag import HealthGraphRAG
+from modules.graph_construction import HealthGraphBuilder
 from dotenv import load_dotenv
 
 # Load .env file
@@ -99,7 +99,7 @@ def init_health_ui():
     
     with st.sidebar:
         # side bar logo
-        st.image("..\app\assets\graphrag-samsunghealth.png", width=200)
+        st.image("./app/assets/graphrag-samsunghealth.png", width=200)
 
         st.header("Manage Health Graph")
         st.write("Upload your Samsung Health data and manage the graph database.")
