@@ -12,6 +12,11 @@
 </p>
 
 
+## System Architecture
+<p align="center">
+    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/16d57be321c9929d83073a7b20073f7e83bcb4c2/app/assets/System_Architecture.svg" alt="Project Logo" width="100%" />
+</p>
+
 ## Project Structure
 ```
 samsunghealth-graphrag
