@@ -1,0 +1,7 @@
+// Remove all relationships first
+MATCH ()-[r]->()
+DELETE r;
+
+// Now delete all nodes
+MATCH (n)
+DELETE n;

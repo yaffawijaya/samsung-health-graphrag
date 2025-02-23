@@ -1,0 +1,2 @@
+MATCH (yaffa:User {name: 'Yaffa'})-[r:HAS_ATE|HAS_DRINK|HAS_SLEPT|HAS_WALKED]->(measurement:HealthData)
+RETURN yaffa, r, measurement;
