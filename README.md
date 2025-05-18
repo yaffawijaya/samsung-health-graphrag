@@ -1,118 +1,182 @@
-# Samsung Health GraphRAG
-<p align="center">
-    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/graphrag-samsunghealth.png" alt="Project Logo" width="30%" />
-</p>
-
-
-## Overview
-**Samsung Health GraphRAG** is a Data Science project developed as part of **Data Science Project 2025**, completed by **Group 1**. This project integrates **Samsung Health data** with **Graph-based Retrieval-Augmented Generation (GraphRAG)** to enable structured and unstructured health data analysis.
+# Samsung Health GraphRAG Explorer
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/app-prototpye.jpeg" alt="Project Logo" width="100%" />
+  <img src="assets/graphrag-samsunghealth.png" alt="GraphRAG Logo" width="30%"/>
 </p>
 
+## Table of Contents
 
-## System Architecture
+1. [Project Overview](#project-overview)  
+2. [Features](#features)  
+3. [System Architecture](#system-architecture)  
+4. [Repository Structure](#repository-structure)  
+5. [Getting Started](#getting-started)  
+   - [1. Clone the Repository](#1-clone-the-repository)  
+   - [2. Configuration](#2-configuration)  
+   - [3. Environment Setup](#3-environment-setup)  
+   - [4. Launch the App](#4-launch-the-app)  
+6. [Usage](#usage)  
+7. [Development & Evaluation](#development--evaluation)  
+8. [Future Work](#future-work)  
+9. [Contact](#contact)  
+
+---
+
+## Project Overview
+
+**Samsung Health GraphRAG Explorer** integrates Samsung Health data with a Graph-based Retrieval-Augmented Generation (GraphRAG) pipeline. It allows users to:
+
+- Upload and clean their Samsung Health ZIP exports.  
+- Persist health measurements (food, water, sleep, steps) in both MySQL and Neo4j.  
+- Pose natural-language queries via a Streamlit interface and receive answers generated from structured Cypher queries and vector search.  
+
 <p align="center">
-    <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/16d57be321c9929d83073a7b20073f7e83bcb4c2/app/assets/System_Architecture.svg" alt="Project Logo" width="100%" />
+  <img src="assets/app-prototype-v2.png" alt="App Prototype" width="80%"/>
 </p>
 
-## Project Structure
-```
-samsunghealth-graphrag
-│-- app/
-│   │-- assets/                # Project assets (images, icons, etc.)
-│   │-- data/                  # Samsung Health dataset
-│   │-- modules/               # Development phase modules
-│   │-- __pycache__/           # Python cache directory
-│   │-- .env                   # Environment variables (not included in repo)
-│   │-- .env-experiment        # Template for environment variables
-│   │-- .gitignore             # Git ignore file
-│   │-- app.py                 # Main application entry point (Streamlit app)
-```
-
-## Installation & Setup
-To run this project locally, follow these steps:
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yaffawijaya/samsung-health-graphrag.git
-cd samsunghealth-graphrag
-```
-
-### 2. Set Up Environment Variables
-- Copy the example `.env-experiment` file and rename it to `.env`
-- Open `.env` and configure your API keys and database credentials:
-
-#### Example `.env` file:
-```
-OPENAI_API_KEY=sk-proj
-NEO4J_URI=bolt://neo4j:portnumber
-NEO4J_USERNAME=username
-NEO4J_PASSWORD=userpass
-MYSQL_HOST=mysql
-MYSQL_USER=root
-MYSQL_PASSWORD=secret
-MYSQL_DATABASE=app
-```
-
-### 3. Install Dependencies (REQUIREMENT NOT READY YET)
-Make sure you have **Python 3.10+** installed. Then, install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Run the Application
-Execute the following command to launch the Streamlit application:
-```bash
-streamlit run app/app.py
-```
+---
 
 ## Features
-- **Samsung Health Data Processing** - Parses, structures, and uploads Samsung Health data into a Neo4j graph database.
-- **Graph-based Retrieval** - Uses Neo4j to store health data (Food, Water, Sleep, and Steps) with a unified date property (recordedOn) and a common label (HealthData).
-- **Hybrid Retrieval-Augmented Generation** - Integrates LangChain and OpenAI to extract structured health entities from user queries, build precise Cypher queries (including date and measurement type filtering), and perform vector search over the graph data.
-- **Streamlit UI** - Provides an interactive interface for users to select existing users, upload Samsung Health ZIP files, manage the graph database, and ask natural language health questions.
+
+- **Data Ingestion & Cleaning**  
+  Parses raw CSV files from Samsung Health ZIP and normalizes them into structured tables.
+
+- **Relational & Graph Storage**  
+  Stores cleaned data in MySQL for tabular reporting and in Neo4j for graph-native queries.
+
+- **Hybrid Retrieval**  
+  Combines Cypher-based querying with vector search over OpenAI embeddings (via LangChain).
+
+- **AI Assistant**  
+  A conversational UI powered by Streamlit’s chat interface. Users can ask questions like “What did I eat on 2025-05-10?” or “Show my average sleep in April 2025.”
+
+---
+
+## System Architecture
+
+<p align="center">
+  <img src="assets/System_Architecture.svg" alt="System Architecture" width="90%"/>
+</p>
+
+1. **Streamlit Frontend**  
+2. **MySQL** for time-series data storage  
+3. **Neo4j** GraphDB with two retrieval modes:  
+   - **Cypher QA Chain** for structured queries  
+   - **Vector QA Chain** for semantic search  
+4. **OpenAI** for embedding & function-calling  
+
+---
+
+## Repository Structure
+```
+├── app.py              # Main Streamlit application
+├── secrets.toml        # Copy of your_secrets.toml with credentials
+├── your_secrets.toml   # Template for database & API credentials
+├── assets/             # Images, diagrams, author photos, poster
+├── modules/
+│ └── utils/
+│ ├── cleaner/          # CSV loading & cleaning routines
+│ ├── db/               # MySQL & Neo4j helper modules
+│ └── retrieval/        # GraphRAG agent setup
+└── setup/
+└── database_setup.py   # SQL schema creation
+```
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yaffawijaya/samsung-health-graphrag.git
+cd samsung-health-graphrag/app
+```
+
+### 2. Configuration
+- Rename `your_secrets.toml` to `secrets.toml` at the project root.
+
+- Populate the file with your credentials:
+```toml
+[mysql]
+user     = "<mysql_username>"
+password = "<mysql_password>"
+host     = "<mysql_host>"
+port     = <mysql_port>
+database = "<mysql_database>"
+
+[neo4j]
+NEO4J_URI      = "<bolt://...>"
+NEO4J_USERNAME = "<neo4j_user>"
+NEO4J_PASSWORD = "<neo4j_password>"
+
+[openai]
+OPENAI_API_KEY = "<your_openai_api_key>"
+
+```
+
+### 3. Environment Setup
+We recommend Conda for reproducibility. From a terminal:
+```bash
+conda env create -f environment.yml
+conda activate graphrag
+```
+
+#### DB SETUP
+1. Run `database_setup.py`
+```bash
+python setup/database_setup.py
+```
+
+### 4. Launch the App
+```bash
+streamlit run app.py
+```
+
+make sure MySQL and Neo4j is rollin
 
 
-## Development Summary and Evaluation
-What We Did
-- **Graph Database Setup:**
+## Usage
+### Home
+Overview, project poster, author credits, GitHub link.
 
-* Developed a Cypher query to create a User node ("Yaffa") and measurement nodes (Food, Water, Sleep, Step) for 14 consecutive days starting from January 1, 2025.
-* Each measurement node now includes a common label (HealthData) and a unified date property (recordedOn), which enables uniform querying across all types.
+### Input Data
+Upload Samsung Health ZIP → cleans and previews tables → push to MySQL & Neo4j.
 
-- **RAG Module (rag.py):**
+### User Dashboard
+Visualize calories, sleep, steps, water with charts and tables.
 
-* Implemented structured retrieval using LangChain’s prompt templates to extract health-related entities from user questions.
-* Enhanced retrieval accuracy by adding helper functions to extract both full dates (YYYY-MM-DD) and month–year ranges (e.g., "January 2025") from queries.
-* Incorporated measurement type extraction (e.g., Food, Water, Sleep, Step) so that queries can be narrowed to a specific health metric.
-* Built a vector search index using OpenAI embeddings over nodes with the HealthData label.
+### AI Assistant
+Chat interface for querying your health graph using natural language.
 
-- **Sreamlit App (app.py):**
+## Development & Evaluation
+### Graph Modeling
+All measurement nodes share the HealthData label and recordedOn date property for uniform querying.
 
-* Developed a user interface with a sidebar dropdown to select an existing user from the Neo4j database, or to input a new user.
-Provided functionality to upload Samsung Health data ZIP files and manage the graph database.
-* Integrated the RAG retrieval system with the UI, allowing users to ask questions (e.g., "What food did I eat on 2025-01-05?" or "Can you provide a summary of my health data for January 2025?") and receive answers based on both structured and vector-based searches.
-* Evaluation (As of February 23, 2025)
-Food Data Retrieval:
-The system accurately returns food-related data when specific dates (e.g., January 5, 2025) or broader queries (e.g., "in January 2025") are used.
+### RAG Pipeline
+
+* Entity Extraction via prompt templates
+
+* Cypher QA Chain to translate NL to structured graph queries
+
+* Vector QA Chain for semantic search over embeddings
+
+### Evaluation
+
+* Food Queries: accurate for daily and monthly requests
+
+* Sleep/Water/Step: retrieval works, but date parsing and filtering need further refinement
 
 
-- **Water, Sleep, and Step Data Retrieval:**
-While the system successfully retrieves some data, testing revealed that queries for sleep duration and step count (especially when specifying exact dates) need further refinement. The extraction of measurement types and date filtering is working, but additional tuning (e.g., improved regex and data indexing) may be required to ensure comprehensive retrieval for these metrics.
+## Future work 
+* Interactive Reporting Dashboard
 
-- **User Interface:**
-The Streamlit app functions smoothly, with a clear dropdown for user selection and an intuitive file upload mechanism. The provided screenshot here confirms the current prototype.
+* Enhanced Query Understanding (multi-range, relative dates)
 
-**Overall:**
-The GraphRAG system shows strong potential for providing health insights from Samsung Health data. While food data is retrieved accurately, further work is needed to enhance the retrieval accuracy for water, sleep, and steps. Future improvements will focus on refining entity extraction and query filtering.
+* Automated Data Ingestion Pipelines
 
-## Future Development
+* User Account & Authentication
 
-- **Interactive Dashboard User Report**: PIC dapa, hasna
-- **Retrieval Refinement**: PIC yaffa
-- **Seamless Data Cleaning Process**: PIC hijrah
 
-## Contact & Support
-For any questions, feel free to open an issue on GitHub or reach out to **yaffazka@gmail.com**.
+# Contact
+For questions or issues, please open a GitHub issue or email yaffazka@gmail.com.
+
+Thank you for exploring Samsung Health GraphRAG Explorer!
