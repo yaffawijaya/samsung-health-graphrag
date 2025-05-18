@@ -1,143 +1,246 @@
-import os
+
+# app.py
 import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from langchain_openai import ChatOpenAI
-from modules.rag import HealthGraphRAG
-from modules.graph_construction import HealthGraphBuilder
-from dotenv import load_dotenv
-from neo4j import GraphDatabase
+import pandas as pd
+import zipfile
+import toml
+import plotly.express as px
+from sqlalchemy.exc import SQLAlchemyError
 
-# Load .env file
-load_dotenv()
+from modules.utils.db.db_utils_mysql import (
+    get_existing_users,
+    get_user_data_from_mysql,
+    push_user_data,
+    delete_user_data
+)
+from modules.utils.db.db_utils_neo4j import (
+    ingest_user_data_to_neo4j,
+    delete_user_data_neo4j,
+    driver as neo4j_driver
+)
+from modules.utils.cleaner.cleaner import (
+    load_csv_from_zip,
+    clean_food_intake,
+    clean_sleep_hours,
+    clean_step_count,
+    clean_water_intake
+)
 
-# Retrieve environment variables
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-NEO4J_URI = os.getenv("NEO4J_URI")
-NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+# Configuration
+cfg_mysql = toml.load('secrets.toml')['mysql']
+DB_URL = (
+    f"mysql+pymysql://{cfg_mysql['user']}:{cfg_mysql['password']}"
+    f"@{cfg_mysql['host']}:{cfg_mysql['port']}/{cfg_mysql['database']}"
+)
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=OPENAI_API_KEY)
+# Streamlit setup
+st.set_page_config(page_title="Samsung Health GraphRAG Explorer", layout="wide")
+st.title("📱 Samsung Health GraphRAG Explorer")
 
-def get_existing_users():
-    """Return a list of existing user names from the Neo4j database."""
-    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
-    with driver.session() as session:
-        result = session.run("MATCH (u:User) RETURN u.name AS name")
-        users = [record["name"] for record in result]
-    driver.close()
-    return users
+# Initialize session state
+if 'main_page' not in st.session_state:
+    st.session_state.main_page = 'input_user_data'
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+    st.session_state.username = None
 
-def process_samsung_health_zip(uploaded_file, user_name):
-    """
-    Extracts and processes health data from the uploaded Samsung Health zip file.
-    """
-    save_path = os.path.join("temp_uploads", uploaded_file.name)
-    with open(save_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
-    graph_builder = HealthGraphBuilder()
-    graph_builder.extract_samsung_health_data(save_path, user_name)
+# Navigation callbacks
+def to_input_user_data():
+    st.session_state.main_page = 'input_user_data'
 
-def health_graph_content():
-    """
-    Populate the graph using extracted Samsung Health data.
-    """
-    graph_builder = HealthGraphBuilder()
-    graph_builder.index_graph()
+def to_user_dashboard():
+    st.session_state.main_page = 'user_dashboard'
 
-def reset_health_graph():
-    """
-    Resets the health knowledge graph.
-    """
-    graph_builder = HealthGraphBuilder()
-    graph_builder.reset_graph()
+def to_ai_assistant():
+    st.session_state.main_page = 'ai_assistant'
 
-def get_health_response(question: str, user: str) -> str:
-    """
-    Retrieves relevant health data using both structured and vector-based retrieval.
-    The selected user is passed to the RAG so that only that user's data is searched.
-    """
-    # Initialize HealthGraphRAG with the chosen user
-    rag = HealthGraphRAG(user=user)
-    search_query = rag.create_health_search_query(st.session_state.chat_history, question)
+# Sidebar - Menu and User Selector
+with st.sidebar:
+    st.header("Main Menu")
+    st.button("📝 Input Data", on_click=to_input_user_data)
+    st.button("📊 User Dashboard", on_click=to_user_dashboard)
+    st.button("🤖 AI Assistant", on_click=to_ai_assistant)
 
-    template = """Answer the question based only on the following health context:
-    {context}
-
-    Question: {question}
-    Use natural language and be concise.
-    Answer:"""
-    prompt = ChatPromptTemplate.from_template(template)
-
-    chain = (
-        RunnableParallel(
-            {"context": lambda x: rag.health_retriever(question), "question": RunnablePassthrough()}
-        )
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    return chain.invoke({"chat_history": st.session_state.chat_history, "question": question})
-
-def init_health_ui():
-    """
-    Initializes the Streamlit UI for the Health RAG application.
-    Now includes a dropdown to select an existing user from Neo4j.
-    """
-    st.set_page_config(page_title="Health RAG Assistant", layout="wide")
-    st.title("Health RAG Assistant")
-    
-    # Initialize session state
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = [
-            AIMessage(content="Hello, I can help analyze your health data. Ask me anything!")
-        ]
-    
-    user_query = st.chat_input("Ask a health-related question...")
-    
-    with st.sidebar:
-        st.image("./app/assets/graphrag-samsunghealth.png", width=200)
-        st.header("Manage Health Graph")
-        st.write("Upload your Samsung Health data and manage the graph database.")
-        
-        existing_users = get_existing_users()
-        if existing_users:
-            selected_user = st.selectbox("Select Existing User", existing_users)
+    st.markdown("---")
+    st.subheader("Select User")
+    try:
+        users_df = get_existing_users()
+        options = [f"{row['username']} ({row['user_id']})" for _, row in users_df.iterrows()]
+    except Exception as e:
+        st.error(f"Error loading users: {e}")
+        options = []
+    selection = st.selectbox("User:", ["-- Select --"] + options)
+    if selection and selection != "-- Select --":
+        uname, uid_str = selection.rsplit(" (", 1)
+        uid = int(uid_str.rstrip(")"))
+        # Validate existence in Neo4j
+        with neo4j_driver.session() as session:
+            res = session.run(
+                "MATCH (u:User {user_id: $uid}) RETURN count(u) AS c",
+                uid=uid
+            ).single()
+            count = res['c'] if res else 0
+        if count == 0:
+            st.error(f"User_id {uid} not found in Neo4j. Please ensure data ingestion.")
+            st.session_state.user_id = None
+            st.session_state.username = None
         else:
-            selected_user = ""
-        
-        new_user = st.text_input("Or enter new User Name", "")
-        user_name = new_user if new_user else selected_user
-        
-        uploaded_file = st.file_uploader("Upload Samsung Health ZIP", type=["zip"])
-        
-        if uploaded_file and user_name:
-            if st.button("Process & Populate Graph"):
-                process_samsung_health_zip(uploaded_file, user_name)
-                health_graph_content()
-        
-        if st.button("Reset Graph"):
-            reset_health_graph()
-    
-    if user_query:
-        if not user_name:
-            st.error("Please select or enter a user name from the sidebar.")
-        else:
-            response = get_health_response(user_query, user_name)
-            st.session_state.chat_history.append(HumanMessage(content=user_query))
-            st.session_state.chat_history.append(AIMessage(content=response))
-    
-    for message in st.session_state.chat_history:
-        if isinstance(message, HumanMessage):
-            with st.chat_message("Human"):
-                st.write(message.content)
-        elif isinstance(message, AIMessage):
-            with st.chat_message("AI"):
-                st.write(message.content)
+            st.session_state.username = uname
+            st.session_state.user_id = uid
 
-if __name__ == "__main__":
-    init_health_ui()
+    # Delete User
+    if st.session_state.user_id:
+        st.markdown("---")
+        st.subheader("Delete User")
+        confirm = st.text_input("Type DELETE to confirm deletion:", key="del_confirm")
+        if st.button("Delete", key="del_btn"):
+            if confirm == "DELETE":
+                try:
+                    delete_user_data(st.session_state.user_id)
+                    delete_user_data_neo4j(st.session_state.user_id)
+                    st.success(f"Deleted user {st.session_state.username} (ID {st.session_state.user_id}) from both DBs.")
+                    st.session_state.user_id = None
+                    st.session_state.username = None
+                except Exception as e:
+                    st.error(f"Failed to delete user: {e}")
+            else:
+                st.error("Type DELETE exactly to confirm.")
+
+# Page: Input User Data
+if st.session_state.main_page == 'input_user_data':
+    st.header("Input User Data")
+    uploaded_zip = st.file_uploader("Upload Samsung Health ZIP file", type="zip")
+    if not uploaded_zip:
+        st.info("Please upload a Samsung Health ZIP file to proceed.")
+        st.stop()
+
+    with zipfile.ZipFile(uploaded_zip) as zip_file:
+        df_food_raw = load_csv_from_zip(zip_file, 'com.samsung.health.food_intake')
+        df_sleep_raw = load_csv_from_zip(zip_file, 'com.samsung.shealth.sleep')
+        df_steps_raw = load_csv_from_zip(zip_file, 'com.samsung.shealth.step_daily_trend')
+        df_water_raw = load_csv_from_zip(zip_file, 'com.samsung.health.water_intake')
+
+    df_food_clean = clean_food_intake(df_food_raw) if not df_food_raw.empty else pd.DataFrame()
+    df_sleep_clean = clean_sleep_hours(df_sleep_raw) if not df_sleep_raw.empty else pd.DataFrame()
+    df_steps_clean = clean_step_count(df_steps_raw) if not df_steps_raw.empty else pd.DataFrame()
+    df_water_clean = clean_water_intake(df_water_raw) if not df_water_raw.empty else pd.DataFrame()
+
+    try:
+        with zipfile.ZipFile(uploaded_zip) as zip_file:
+            df_profile = load_csv_from_zip(zip_file, 'com.samsung.health.user_profile')
+            default_username = df_profile.iloc[2, 0] if not df_profile.empty else ""
+    except Exception:
+        default_username = ""
+
+    new_username = st.text_input("Username for this dataset:", value=default_username)
+
+    if st.button("Push Data to Databases"):
+        if not new_username:
+            st.error("Username is required.")
+        else:
+            try:
+                user_id = push_user_data(
+                    new_username,
+                    df_food_clean,
+                    df_water_clean,
+                    df_sleep_clean,
+                    df_steps_clean
+                )
+                st.success(f"MySQL: Data successfully pushed (user_id={user_id})")
+            except Exception as e:
+                st.error(f"MySQL push failed: {e}")
+                user_id = None
+
+            if user_id:
+                try:
+                    ingest_user_data_to_neo4j(
+                        user_id,
+                        new_username,
+                        df_food_clean,
+                        df_water_clean,
+                        df_steps_clean,
+                        df_sleep_clean
+                    )
+                    st.success(f"Neo4j: Data ingested for user_id={user_id}")
+                except Exception as e:
+                    st.error(f"Neo4j ingestion failed: {e}")
+
+    st.markdown("---")
+    st.subheader("Cleaned Data Preview")
+    with st.expander("Show Cleaned Data"):
+        if not df_food_clean.empty:
+            st.write("Cleaned Food Intake"); st.dataframe(df_food_clean)
+        if not df_sleep_clean.empty:
+            st.write("Cleaned Sleep Hours"); st.dataframe(df_sleep_clean)
+        if not df_steps_clean.empty:
+            st.write("Cleaned Step Count"); st.dataframe(df_steps_clean)
+        if not df_water_clean.empty:
+            st.write("Cleaned Water Intake"); st.dataframe(df_water_clean)
+
+# Page: User Health Dashboard
+elif st.session_state.main_page == 'user_dashboard':
+    st.header("User Health Dashboard")
+    user_id = st.session_state.user_id
+    username = st.session_state.username
+    if not user_id:
+        st.warning("Please select a user in the sidebar.")
+        st.stop()
+
+    st.subheader(f"Dashboard for {username} (ID: {user_id})")
+    # Load user data
+    data = get_user_data_from_mysql(user_id)
+    df_food = data.get('food_intake', pd.DataFrame())
+    df_sleep = data.get('sleep_hours', pd.DataFrame())
+    df_steps = data.get('step_count', pd.DataFrame())
+    df_water = data.get('water_intake', pd.DataFrame())
+
+    # Standardize date columns
+    for df, col in zip([df_food, df_sleep, df_steps, df_water], ['event_time','date','date','event_time']):
+        if not df.empty:
+            df['date'] = pd.to_datetime(df[col]).dt.date
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Total Calories", int(df_food['calories'].sum()) if not df_food.empty else 0)
+    c2.metric("Avg Sleep (hrs)", round(df_sleep['total_sleep_h'].mean(), 2) if not df_sleep.empty else 0)
+    c3.metric("Total Water (ml)", int(df_water['amount'].sum()) if not df_water.empty else 0)
+    c4.metric("Avg Steps/Day", int(df_steps['total_steps'].mean()) if not df_steps.empty else 0)
+
+    st.markdown("---")
+    tabs = st.tabs(["Food","Sleep","Steps","Water"])
+    with tabs[0]:
+        st.subheader("Food Intake Over Time")
+        if not df_food.empty:
+            df_daily = df_food.groupby('date')['calories'].sum().reset_index()
+            st.plotly_chart(px.line(df_daily, x='date', y='calories'), use_container_width=True)
+            st.dataframe(df_food[['date','food_name','amount','calories']])
+        else:
+            st.info("No food data.")
+    with tabs[1]:
+        st.subheader("Sleep Duration")
+        if not df_sleep.empty:
+            st.plotly_chart(px.bar(df_sleep, x='date', y='total_sleep_h'), use_container_width=True)
+            st.dataframe(df_sleep)
+        else:
+            st.info("No sleep data.")
+    with tabs[2]:
+        st.subheader("Step Count Trend")
+        if not df_steps.empty:
+            st.plotly_chart(px.line(df_steps, x='date', y='total_steps'), use_container_width=True)
+            st.dataframe(df_steps)
+        else:
+            st.info("No step data.")
+    with tabs[3]:
+        st.subheader("Water Intake")
+        if not df_water.empty:
+            st.plotly_chart(px.bar(df_water, x='date', y='amount'), use_container_width=True)
+            st.dataframe(df_water[['date','amount']])
+        else:
+            st.info("No water data.")
+
+# Page: AI Assistant
+elif st.session_state.main_page == 'ai_assistant':
+    st.header("AI Assistant")
+    if not st.session_state.user_id:
+        st.warning("Please select a user in the sidebar to use the AI Assistant.")
+        st.stop()
+    st.info(f"Chat feature coming soon for user: {st.session_state.username} (ID: {st.session_state.user_id})")

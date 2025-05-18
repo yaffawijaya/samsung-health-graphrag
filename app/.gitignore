@@ -1,3 +1,2 @@
 __pycache__
-.env
-test_key.py
+secrets.toml
