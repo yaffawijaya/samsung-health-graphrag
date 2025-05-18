@@ -46,7 +46,7 @@ def get_user_data_from_mysql(user_id: int) -> dict:
     return data
 
 
-def push_user_data(
+def push_user_data_mysql(
     username: str,
     df_food: pd.DataFrame,
     df_water: pd.DataFrame,
@@ -125,7 +125,7 @@ def push_user_data(
     return user_id
 
 
-def delete_user_data(user_id: int):
+def delete_user_data_mysql(user_id: int):
     """
     Delete a user and all associated records by user_id.
     """
