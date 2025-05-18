@@ -1,6 +1,8 @@
-
+#!/usr/bin/env python3
 # app.py
 import streamlit as st
+import time
+import re
 import pandas as pd
 import zipfile
 import toml
@@ -25,6 +27,7 @@ from modules.utils.cleaner.cleaner import (
     clean_step_count,
     clean_water_intake
 )
+from modules.utils.retrieval.graphrag import get_graphrag_agent
 
 # Configuration
 cfg_mysql = toml.load('secrets.toml')['mysql']
@@ -43,6 +46,10 @@ if 'main_page' not in st.session_state:
 if 'user_id' not in st.session_state:
     st.session_state.user_id = None
     st.session_state.username = None
+if 'agent_executor' not in st.session_state:
+    st.session_state.agent_executor = None
+if 'ai_history' not in st.session_state:
+    st.session_state.ai_history = []
 
 # Navigation callbacks
 def to_input_user_data():
@@ -85,8 +92,8 @@ with st.sidebar:
             st.session_state.user_id = None
             st.session_state.username = None
         else:
-            st.session_state.username = uname
             st.session_state.user_id = uid
+            st.session_state.username = uname
 
     # Delete User
     if st.session_state.user_id:
@@ -101,6 +108,7 @@ with st.sidebar:
                     st.success(f"Deleted user {st.session_state.username} (ID {st.session_state.user_id}) from both DBs.")
                     st.session_state.user_id = None
                     st.session_state.username = None
+                    st.session_state.ai_history = []
                 except Exception as e:
                     st.error(f"Failed to delete user: {e}")
             else:
@@ -187,14 +195,12 @@ elif st.session_state.main_page == 'user_dashboard':
         st.stop()
 
     st.subheader(f"Dashboard for {username} (ID: {user_id})")
-    # Load user data
     data = get_user_data_from_mysql(user_id)
     df_food = data.get('food_intake', pd.DataFrame())
     df_sleep = data.get('sleep_hours', pd.DataFrame())
     df_steps = data.get('step_count', pd.DataFrame())
     df_water = data.get('water_intake', pd.DataFrame())
 
-    # Standardize date columns
     for df, col in zip([df_food, df_sleep, df_steps, df_water], ['event_time','date','date','event_time']):
         if not df.empty:
             df['date'] = pd.to_datetime(df[col]).dt.date
@@ -237,10 +243,90 @@ elif st.session_state.main_page == 'user_dashboard':
         else:
             st.info("No water data.")
 
-# Page: AI Assistant
+
 elif st.session_state.main_page == 'ai_assistant':
     st.header("AI Assistant")
+
+    # 1) Ensure a user is selected
     if not st.session_state.user_id:
         st.warning("Please select a user in the sidebar to use the AI Assistant.")
         st.stop()
-    st.info(f"Chat feature coming soon for user: {st.session_state.username} (ID: {st.session_state.user_id})")
+
+    username = st.session_state.username  # e.g. "Yaffa"
+    user_id = st.session_state.user_id
+
+    # 2) Lazy‐init agent
+    if st.session_state.agent_executor is None:
+        st.session_state.agent_executor = get_graphrag_agent()
+
+    # 3) Initialize history & welcome flags
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'last_user_for_welcome' not in st.session_state:
+        st.session_state.last_user_for_welcome = None
+    if 'last_page_for_welcome' not in st.session_state:
+        st.session_state.last_page_for_welcome = None
+
+    # 4) Show welcome once per user or page load
+    should_welcome = (
+        st.session_state.last_page_for_welcome != 'ai_assistant'
+        or st.session_state.last_user_for_welcome != user_id
+    )
+    if should_welcome:
+        welcome_text = f"👋 Hello, {username}! Ask me anything about your health data."
+        with st.chat_message("assistant"):
+            def _welcome_gen():
+                for word in welcome_text.split(" "):
+                    yield word + " "
+                    time.sleep(0.02)
+            st.write_stream(_welcome_gen())
+        st.session_state.last_page_for_welcome = 'ai_assistant'
+        st.session_state.last_user_for_welcome = user_id
+
+    # 5) Render previous conversation
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg['role']):
+            st.write(msg['content'])
+
+    # 6) Collect new user input
+    user_input = st.chat_input("Ask a question about your health data:")
+    if user_input:
+        # 6a) Display the user's question immediately
+        with st.chat_message("user"):
+            st.write(user_input)
+        st.session_state.chat_history.append({
+            'role': 'user',
+            'content': user_input
+        })
+
+        # 6b) Stream the assistant’s response
+        def _response_gen():
+            # Send the username, not the numeric ID
+            prompt = f"For user {username}, {user_input}"
+            try:
+                result = st.session_state.agent_executor.invoke({"input": prompt})
+                answer = result.get("output", "").strip()
+            except Exception:
+                answer = ""
+
+            # Sanitize any leftover "user with id 'X'" mentions
+            pattern = re.compile(r"user with id\s*'?"+re.escape(str(user_id))+"'?")
+            answer = pattern.sub(username, answer)
+
+            # Fallback for empty or error-like output
+            if not answer or answer.lower().startswith("error") or "syntaxerror" in answer.lower():
+                answer = "I’m sorry, I don’t have the information to answer that."
+
+            # Stream word by word
+            for token in answer.split(" "):
+                yield token + " "
+                time.sleep(0.02)
+
+        with st.chat_message("assistant"):
+            reply = st.write_stream(_response_gen())
+
+        # 6c) Save the assistant reply
+        st.session_state.chat_history.append({
+            'role': 'assistant',
+            'content': reply
+        })
