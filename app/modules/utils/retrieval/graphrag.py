@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import toml
 
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.tools import tool
 from langchain.chains import RetrievalQA
 from langchain.agents import initialize_agent, AgentType
