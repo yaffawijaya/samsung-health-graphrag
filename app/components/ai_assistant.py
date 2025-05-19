@@ -91,7 +91,7 @@ def render_ai_assistant():
         thinking_container.markdown(
             """
             <div class='chat-container'><div class='ai-msg'>
-                <em>🤖 AI is typing<span class='dotting'>.</span></em>
+                <em>🤖 AI is thinking<span class='dotting'>.</span></em>
             </div></div>
             <style>
                 .dotting::after {
