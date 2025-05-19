@@ -1,7 +1,7 @@
 # Samsung Health GraphRAG Explorer
 
 <p align="center">
-  <img src="assets/graphrag-samsunghealth.png" alt="GraphRAG Logo" width="30%"/>
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/sample_chatbot.gif" alt="Demo Application" width="30%"/>
 </p>
 
 ## Table of Contents
