@@ -37,14 +37,17 @@ from components.input_data import render_input_data
 from components.dashboard import render_dashboard
 from components.ai_assistant import render_ai_assistant
 
+from urllib.parse import quote_plus
+
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
 cfg = toml.load('secrets.toml')
 DB_MYSQL = cfg['mysql']
+PASSWORD = quote_plus(DB_MYSQL['password'])
 DB_URL = (
-    f"mysql+pymysql://{DB_MYSQL['user']}:{DB_MYSQL['password']}"
+    f"mysql+pymysql://{DB_MYSQL['user']}:{PASSWORD}"
     f"@{DB_MYSQL['host']}:{DB_MYSQL['port']}/{DB_MYSQL['database']}"
 )
-st.set_page_config(page_title="Samsung Health GraphRAG Explorer", layout="wide")
+st.set_page_config(page_title="Samsung Health GraphRAG", layout="wide")
 
 # ─── SESSION STATE DEFAULTS ───────────────────────────────────────────────────
 
@@ -105,7 +108,7 @@ def render_sidebar():
     # Only show user selection when Dashboard or AI Assistant is chosen
     if st.session_state.main_page in ['user_dashboard', 'ai_assistant']:
         try:
-            users = get_existing_users()
+            users = get_existing_users(DB_URL)
             user_map = {row['username']: row['user_id'] for _, row in users.iterrows()}
             user_options = ['-- Select --'] + list(user_map.keys())
             choice = st.sidebar.selectbox(
@@ -118,7 +121,7 @@ def render_sidebar():
                 if st.session_state.user_id:
                     with st.sidebar.expander("Delete User?", expanded=False):
                         if st.button("Delete This User", key="delete_user_btn"):
-                            delete_user_data_mysql(st.session_state.user_id)
+                            delete_user_data_mysql(st.session_state.user_id, DB_URL)
                             delete_user_data_neo4j(st.session_state.user_id)
                             st.success(f"User '{st.session_state.username}' and related data have been deleted.")
                             st.session_state.user_id = None
@@ -187,7 +190,7 @@ def main():
         if not st.session_state.user_id:
             st.warning("Select a user first.")
         else:
-            render_dashboard()
+            render_dashboard(DB_URL)
     elif page == 'ai_assistant':
         if not st.session_state.user_id or not st.session_state.session_id:
             st.warning("User and session required.")

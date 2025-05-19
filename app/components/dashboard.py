@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from modules.utils.db.db_utils_mysql import get_user_data_from_mysql
 
-def render_dashboard():
+def render_dashboard(db_url: str):
     st.markdown(
         "<h1 style='text-align:center; color:#4B79A1;'>📊 User Health Dashboard</h1>",
         unsafe_allow_html=True
@@ -20,7 +20,7 @@ def render_dashboard():
     st.markdown("---")
 
     # Load data
-    data     = get_user_data_from_mysql(uid)
+    data     = get_user_data_from_mysql(uid, db_url)
     df_food  = data['food_intake']
     df_sleep = data['sleep_hours']
     df_steps = data['step_count']

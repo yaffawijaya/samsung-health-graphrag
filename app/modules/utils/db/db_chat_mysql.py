@@ -3,10 +3,13 @@
 import toml
 import pandas as pd
 from sqlalchemy import create_engine, text
+from urllib.parse import quote_plus
 
+# Load credentials
 cfg = toml.load('secrets.toml')['mysql']
+password_encoded = quote_plus(cfg['password'])
 DB_URL = (
-    f"mysql+pymysql://{cfg['user']}:{cfg['password']}"
+    f"mysql+pymysql://{cfg['user']}:{password_encoded}"
     f"@{cfg['host']}:{cfg['port']}/{cfg['database']}"
 )
 

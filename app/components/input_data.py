@@ -54,7 +54,8 @@ def render_input_data(DB_URL):
                         df_food_clean,
                         df_water_clean,
                         df_sleep_clean,
-                        df_steps_clean
+                        df_steps_clean,
+                        DB_URL
                     )
                     st.success(f"MySQL: Data successfully pushed (user_id={user_id})")
 
