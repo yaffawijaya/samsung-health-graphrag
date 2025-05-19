@@ -1,7 +1,12 @@
-# Samsung Health GraphRAG Explorer
+# Samsung Health GraphRAG
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/sample_chatbot.gif" alt="Demo Application" width="100%"/>
+</p>
+
+## Poster
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/psd_poster.png" alt="Poster" width="80%"/>
 </p>
 
 ## Table of Contents
