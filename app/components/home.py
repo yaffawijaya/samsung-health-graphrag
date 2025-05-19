@@ -81,7 +81,7 @@ def render_home():
     st.markdown(
         """
         <div style='text-align: center; margin-top: 20px;'>
-            <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/psd_poster_ai_generated.png" width="300"/>
+            <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/psd_poster.png" width="400"/>
         </div>
         """,
         unsafe_allow_html=True
