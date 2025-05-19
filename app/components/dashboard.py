@@ -33,7 +33,7 @@ def render_dashboard():
 
     # Metric Summary
     st.markdown("### Summary Metrics")
-    c1, c2, c3, c4 = st.columsns(4)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Calories", int(df_food['calories'].sum()) if not df_food.empty else 0)
     c2.metric("Avg Sleep (hrs)", round(df_sleep['total_sleep_h'].mean(), 2) if not df_sleep.empty else 0)
     c3.metric("Water Intake (ml)", int(df_water['amount'].sum()) if not df_water.empty else 0)
