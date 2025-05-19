@@ -46,8 +46,9 @@ def render_input_data(DB_URL):
         if not new_username.strip():
             st.error("❗ Username is required.")
         else:
-            with st.spinner("Pushing to MySQL..."):
-                try:
+            user_id = None
+            try:
+                with st.spinner("Pushing to MySQL..."):
                     user_id = push_user_data_mysql(
                         new_username,
                         df_food_clean,
@@ -56,11 +57,7 @@ def render_input_data(DB_URL):
                         df_steps_clean
                     )
                     st.success(f"MySQL: Data successfully pushed (user_id={user_id})")
-                except Exception as e:
-                    st.error(f"MySQL push failed: {e}")
-                    user_id = None
 
-            if user_id:
                 with st.spinner("Ingesting to Neo4j..."):
                     try:
                         ingest_user_data_to_neo4j(
@@ -72,8 +69,15 @@ def render_input_data(DB_URL):
                             df_sleep_clean
                         )
                         st.success(f"Neo4j: Data ingested for user_id={user_id}")
-                    except Exception as e:
-                        st.error(f"Neo4j ingestion failed: {e}")
+                    except Exception as neo4j_err:
+                        # Rollback MySQL if Neo4j fails
+                        from modules.utils.db.db_utils_mysql import delete_user_data_mysql
+                        delete_user_data_mysql(user_id)
+                        st.error(f"Neo4j ingestion failed. MySQL rollback performed. Error: {neo4j_err}")
+            except Exception as mysql_err:
+                st.error(f"MySQL push failed: {mysql_err}")
+
+
 
     st.markdown("---")
     st.subheader("Cleaned Data Preview")
