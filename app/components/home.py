@@ -24,15 +24,8 @@ def render_home():
         "<h2 style='text-align:center; color:#4B79A1;'>Meet the Team</h2>",
         unsafe_allow_html=True
     )
-    # Display authors with Streamlit image and markdown for names
-    authors = [
-        ("Yaffazka Afazillah Wijaya", './assets/author_1_yaffa.jpeg'),
-        ("Daffa Aqil Shadiq",        './assets/author_2_dapa.png'),
-        ("Hasna Aqila R.",           './assets/author_4_hasna.png'),
-        ("Hijrah Wira Pratama",      './assets/author_3_hijrah.png')
-    ]
 
-    # CSS untuk center gambar dan teks author
+    # CSS and author HTML layout
     st.markdown(
         """
         <style>
@@ -42,8 +35,7 @@ def render_home():
                 align-items: center;
                 gap: 50px;
                 flex-wrap: wrap;
-                margin-top: 30px;
-                margin-bottom: 30px;
+                margin: 30px 0;
             }
             .author-item {
                 text-align: center;
@@ -55,21 +47,28 @@ def render_home():
                 object-fit: cover;
             }
         </style>
+
+        <div class="author-container">
+            <div class="author-item">
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_1_yaffa.jpeg" class="author-img"/>
+                <p style="font-weight: bold; margin-top: 8px;">Yaffazka Afazillah Wijaya</p>
+            </div>
+            <div class="author-item">
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_2_dapa.png" class="author-img"/>
+                <p style="font-weight: bold; margin-top: 8px;">Daffa Aqil Shadiq</p>
+            </div>
+            <div class="author-item">
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_4_hasna.png" class="author-img"/>
+                <p style="font-weight: bold; margin-top: 8px;">Hasna Aqila R.</p>
+            </div>
+            <div class="author-item">
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_3_hijrah.png" class="author-img"/>
+                <p style="font-weight: bold; margin-top: 8px;">Hijrah Wira Pratama</p>
+            </div>
+        </div>
         """, unsafe_allow_html=True
     )
 
-    # HTML layout for author section
-    st.markdown('<div class="author-container">', unsafe_allow_html=True)
-    for name, img in authors:
-        st.markdown(f"""
-            <div class="author-item">
-                <img src="{img}" class="author-img"/>
-                <p style="font-weight: bold; margin-top: 8px;">{name}</p>
-            </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Separator
     st.markdown("---")
 
     # Project Poster heading
@@ -78,15 +77,16 @@ def render_home():
         unsafe_allow_html=True
     )
 
-    # Center the poster image
+    # Center the poster image from GitHub
     st.markdown(
         """
         <div style='text-align: center; margin-top: 20px;'>
-            <img src='./assets/psd_poster_ai_generated.png' width='300'/>
+            <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/psd_poster_ai_generated.png" width="300"/>
         </div>
         """,
         unsafe_allow_html=True
     )
+
     st.markdown("---")
 
     # GitHub link
