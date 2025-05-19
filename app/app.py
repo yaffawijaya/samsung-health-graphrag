@@ -114,6 +114,18 @@ def render_sidebar():
             if choice != '-- Select --':
                 st.session_state.user_id = user_map[choice]
                 st.session_state.username = choice
+                # Delete user expander
+                if st.session_state.user_id:
+                    with st.sidebar.expander("Delete User?", expanded=False):
+                        if st.button("Delete This User", key="delete_user_btn"):
+                            delete_user_data_mysql(st.session_state.user_id)
+                            delete_user_data_neo4j(st.session_state.user_id)
+                            st.success(f"User '{st.session_state.username}' and related data have been deleted.")
+                            st.session_state.user_id = None
+                            st.session_state.username = None
+                            st.session_state.session_id = None
+                            st.session_state.chat_history = []
+                            st.rerun()
         except Exception as e:
             st.sidebar.error(f"Error loading users: {e}")
 
