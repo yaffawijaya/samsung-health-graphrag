@@ -50,7 +50,7 @@ def render_home():
 
         <div class="author-container">
             <div class="author-item">
-                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_1_yaffa.jpeg" class="author-img"/>
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_1_yaffa.png" class="author-img"/>
                 <p style="font-weight: bold; margin-top: 8px;">Yaffazka Afazillah Wijaya</p>
             </div>
             <div class="author-item">
