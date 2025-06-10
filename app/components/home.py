@@ -272,9 +272,9 @@ def render_home():
         """
         <div style='text-align:center; margin-top: 50px; font-size: 0.9em; color: #777;'>
         <p>Learn more about the project on GitHub:</p>
-        <a href='https://github.com/yaffawijaya/samsung-health-graphrag' target='_blank'
+        <a href='https://github.com/yaffawijaya/samsung-health-graphrag/tree/claude-improvements' target='_blank'
         style='color:#4B79A1; text-decoration:underline;'>
-        https://github.com/yaffawijaya/samsung-health-graphrag
+        https://github.com/yaffawijaya/samsung-health-graphrag/tree/claude-improvements
         </a>
         </div>
         """,
