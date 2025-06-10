@@ -50,19 +50,19 @@ def render_home():
 
         <div class="author-container">
             <div class="author-item">
-                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_1_yaffa.jpeg" class="author-img"/>
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_1_yaffa.jpeg" class="author-img"/>
                 <p style="font-weight: bold; margin-top: 8px;">Yaffazka Afazillah Wijaya</p>
             </div>
             <div class="author-item">
-                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_2_dapa.png" class="author-img"/>
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_2_dapa.png" class="author-img"/>
                 <p style="font-weight: bold; margin-top: 8px;">Daffa Aqil Shadiq</p>
             </div>
             <div class="author-item">
-                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_4_hasna.png" class="author-img"/>
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_4_hasna.png" class="author-img"/>
                 <p style="font-weight: bold; margin-top: 8px;">Hasna Aqila R.</p>
             </div>
             <div class="author-item">
-                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/author_3_hijrah.png" class="author-img"/>
+                <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/author_3_hijrah.png" class="author-img"/>
                 <p style="font-weight: bold; margin-top: 8px;">Hijrah Wira Pratama</p>
             </div>
         </div>
@@ -81,7 +81,7 @@ def render_home():
     st.markdown(
         """
         <div style='text-align: center; margin-top: 20px;'>
-            <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/master/app/assets/psd_poster.png" width="400"/>
+            <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets/psd_poster.png" width="400"/>
         </div>
         """,
         unsafe_allow_html=True

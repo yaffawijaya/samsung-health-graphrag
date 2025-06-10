@@ -1,12 +1,12 @@
 # Samsung Health GraphRAG
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/sample_chatbot.gif" alt="Demo Application" width="100%"/>
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/claude-improvements/app/assets/sample_chatbot.gif" alt="Demo Application" width="100%"/>
 </p>
 
 ## Poster
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/master/app/assets/psd_poster.png" alt="Poster" width="80%"/>
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/claude-improvements/app/assets/psd_poster.png" alt="Poster" width="80%"/>
 </p>
 
 ## Table of Contents
