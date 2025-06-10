@@ -36,7 +36,7 @@
 - Pose natural-language queries via a Streamlit interface and receive answers generated from structured Cypher queries and vector search.  
 
 <p align="center">
-  <img src="assets/app-prototype-v2.png" alt="App Prototype" width="80%"/>
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/claude-improvements/app/assets/app-prototype-v2.png" alt="App Prototype" width="80%"/>
 </p>
 
 ---
@@ -60,7 +60,7 @@
 ## System Architecture
 
 <p align="center">
-  <img src="assets/System_Architecture.svg" alt="System Architecture" width="90%"/>
+  <img src="https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/refs/heads/claude-improvements/app/assets/System_Architecture.svg" alt="System Architecture" width="90%"/>
 </p>
 
 1. **Streamlit Frontend**  
