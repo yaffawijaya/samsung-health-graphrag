@@ -3,7 +3,7 @@ import streamlit as st
 
 def render_home():
     # Define the base URL for your GitHub branch
-    github_base_url = "https://github.com/yaffawijaya/samsung-health-graphrag/tree/claude-improvements"
+    github_base_url = "https://github.com/yaffawijaya/samsung-health-graphrag/tree/exhibition"
     assets_base_url = "https://raw.githubusercontent.com/yaffawijaya/samsung-health-graphrag/claude-improvements/app/assets"
 
     # Overall page styling (removed font import since it's now global)
@@ -321,102 +321,100 @@ def render_home():
     )
     st.markdown("---")
 
-    # Tech Stack Section - Using clean card design like Key Features
-    st.markdown("<h2 class='section-header'>🛠️ Technology Stack</h2>", unsafe_allow_html=True)
-    
+    # --- TECHNOLOGY STACK (Corrected Version) ---
+    st.markdown("<h2 class='section-header'>Technology Stack</h2>", unsafe_allow_html=True)
+
     # Deployment Platform
-    st.markdown("### 💾 Deployment Platform")
+    st.markdown("### Deployment Platform")
     st.markdown(
         """
         <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://download.logo.wine/logo/Google_Cloud_Platform/Google_Cloud_Platform-Logo.wine.png" alt="Google Cloud Platform" style="width: 80px; height: 80px; object-fit: contain;">
+            <div class="feature-card" style="text-align: center;">
+                <div class="feature-icon" style="margin-bottom: 1rem;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Google_Cloud_logo.svg" alt="Google Cloud" style="width: 350px; height: auto; object-fit: contain;">
                 </div>
-                <h3>Google Cloud Platform</h3>
                 <p>Scalable cloud infrastructure for reliable deployment and hosting of the Samsung Health GraphRAG application.</p>
             </div>
         </div>
         """, unsafe_allow_html=True
     )
-    
+
     # Development Tools
-    st.markdown("### 💻 Development Tools")
+    st.markdown("### Development Tools")
     st.markdown(
         """
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://img.favpng.com/24/0/1/python-scalable-vector-graphics-logo-javascript-clip-art-png-favpng-7AMPmkRx5u0JQsydMRxFv8mKn.jpg" alt="Python" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem;">
+                    <img src="https://images.icon-icons.com/2699/PNG/512/python_logo_icon_168886.png" alt="Python" style="width: 100px; height: 100px; object-fit: contain;">
                 </div>
-                <h3>Python</h3>
                 <p>Core programming language powering the backend logic, data processing, and AI integration components.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.svg" alt="Streamlit" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem;">
+                    <img src="https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.svg" alt="Streamlit" style="width: 450px; height: 100px; object-fit: contain;">
                 </div>
-                <h3>Streamlit</h3>
                 <p>Modern web framework for building the interactive user interface with real-time data visualization.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://brandlogos.net/wp-content/uploads/2025/03/langchain-logo_brandlogos.net_9zgaw.png" alt="LangChain" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem;">
+                    <img src="https://js.langchain.com/img/brand/wordmark.png" alt="LangChain" style="width: 450px; height: 100px; object-fit: contain;">
                 </div>
-                <h3>LangChain</h3>
                 <p>Framework for building AI applications with language models, enabling sophisticated RAG capabilities.</p>
             </div>
         </div>
         """, unsafe_allow_html=True
     )
-    
+
     # Database Technologies
-    st.markdown("### 🗄️ Database Technologies")
+    st.markdown("### Database Technologies")
     st.markdown(
         """
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Neo4j-logo_color.png" alt="Neo4j" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Neo4j-logo_color.png" alt="Neo4j" style="width: 160px; height: 100px; object-fit: contain;">
                 </div>
-                <h3>Neo4j</h3>
                 <p>Graph database for storing health data relationships and enabling complex pattern discovery through GraphRAG.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://cdn.iconscout.com/icon/free/png-256/free-mysql-logo-icon-download-in-svg-png-gif-file-formats--technology-social-media-company-brand-vol-5-pack-logos-icons-2945040.png?f=webp&w=256" alt="MySQL" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://cdn.iconscout.com/icon/free/png-256/free-mysql-logo-icon-download-in-svg-png-gif-file-formats--technology-social-media-company-brand-vol-5-pack-logos-icons-2945040.png?f=webp&w=256" alt="MySQL" style="width: 160px; height: 100px; object-fit: contain;">
                 </div>
-                <h3>MySQL</h3>
                 <p>Relational database for structured health data storage, user management, and chat session history.</p>
             </div>
         </div>
         """, unsafe_allow_html=True
     )
-    
+
     # AI Technologies
-    st.markdown("### 🤖 AI Technologies")
+    st.markdown("### AI Technologies")
     st.markdown(
         """
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Claude_AI_logo.svg/1280px-Claude_AI_logo.svg.png" alt="Claude Sonnet 4" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Claude_AI_logo.svg/1280px-Claude_AI_logo.svg.png" alt="Claude" style="width: 200px; object-fit: contain;">
                 </div>
-                <h3>Claude Sonnet 4</h3>
                 <p>Advanced AI assistant used for development support, code optimization, and architectural design decisions.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1280px-OpenAI_Logo.svg.png" alt="OpenAI GPT-4" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="feature-icon" style="margin-bottom: 1rem; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1280px-OpenAI_Logo.svg.png" alt="OpenAI GPT-4" style="width: 200px; object-fit: contain;">
                 </div>
-                <h3>OpenAI GPT-4</h3>
                 <p>Large language model powering the conversational AI assistant for natural health data analysis.</p>
+            </div>
+             <div class="feature-card">
+                <div class="feature-icon" style="margin-bottom: 1rem; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Google_Gemini_logo.svg/2560px-Google_Gemini_logo.svg.png" alt="Gemini" style="width: 200px; object-fit: contain;">
+                </div>
+                <p>This app is developed with the help of Gemini, providing assistance with code, deployment, and documentation.</p>
             </div>
         </div>
         """, unsafe_allow_html=True
     )
     st.markdown("---")
-
+    
     # Key Features
     st.markdown("<h2 class='section-header'>Key Features</h2>", unsafe_allow_html=True)
     st.markdown(
