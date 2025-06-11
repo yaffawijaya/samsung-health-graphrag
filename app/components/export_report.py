@@ -23,394 +23,6 @@ def _plotly_fig_to_base64_img(fig, key):
         # Placeholder for broken image or a small transparent image if conversion fails
         return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
 
-
-def generate_html_report(df_food, df_sleep, df_steps, df_water, total_score, score_breakdown, insights, username, plotly_figures):
-    """
-    Generates a comprehensive HTML health report that can be printed to PDF,
-    including static images of Plotly charts.
-    """
-
-    # Collect all figures that need to be converted to images, along with their titles and captions
-    # This list will be used to track progress
-    all_figures_for_conversion = []
-
-    # Health Score Gauge
-    if plotly_figures.get("health_score_gauge"):
-        all_figures_for_conversion.append({
-            "fig": plotly_figures["health_score_gauge"],
-            "title": "Health Score Gauge",
-            "caption": "Your overall health score at a glance.",
-            "key": "health_score_gauge"
-        })
-
-    # Health Trends Over Time
-    trend_charts = [
-        ("sleep_trend_chart", "Sleep Duration Trend", "💤 Track sleep consistency and identify patterns in your sleep duration over time."),
-        ("water_trend_chart", "Daily Water Intake Trend", "💧 Monitor hydration habits and see if you're maintaining consistent water intake."),
-        ("steps_trend_chart", "Daily Steps Trend", "🚶 Visualize activity levels and identify periods of increased or decreased movement."),
-        ("food_trend_chart", "Daily Calories Trend", "🍽️ Track eating patterns and caloric intake trends to maintain balanced nutrition."),
-    ]
-    for key, title, caption in trend_charts:
-        if plotly_figures.get(key):
-            all_figures_for_conversion.append({"fig": plotly_figures[key], "title": title, "caption": caption, "key": key})
-
-    # Weekly Activity Patterns
-    pattern_charts = [
-        ("sleep_pattern_chart", "Sleep - Weekly Pattern", "😴 See which days you sleep best/worst. Plan consistent bedtimes for low-sleep days."),
-        ("steps_pattern_chart", "Steps - Weekly Pattern", "🏃 Identify low-activity days. Schedule workouts or walks on these days."),
-        ("water_pattern_chart", "Water Intake - Weekly Pattern", "💦 Track hydration patterns. Set reminders for low-water days."),
-        ("food_pattern_chart", "Calorie Intake - Weekly Pattern", "🍕 Monitor eating patterns. Plan healthier options for high-calorie days."),
-    ]
-    for key, title, caption in pattern_charts:
-        if plotly_figures.get(key):
-            all_figures_for_conversion.append({"fig": plotly_figures[key], "title": title, "caption": caption, "key": key})
-
-    # Health Metrics Correlation
-    if plotly_figures.get("correlation_heatmap"):
-        all_figures_for_conversion.append({
-            "fig": plotly_figures["correlation_heatmap"],
-            "title": "Health Metrics Correlation",
-            "caption": "🔗 Discover how your health metrics influence each other. Strong correlations can help you optimize one area to improve another.",
-            "key": "correlation_heatmap"
-        })
-
-    # Detailed Data Analysis
-    detailed_charts = [
-        ("food_cal_dist", "Daily Calorie Distribution", "📈 Shows how often you hit different calorie levels. Look for consistency around healthy ranges (1,500-2,500)."),
-        ("top_foods_pie", "Top Food Sources (by Calories)", "🥘 Identifies your main calorie sources. Large slices might need attention if they're less healthy foods."),
-        ("sleep_duration_box", "Sleep Duration Distribution", "📦 Box plot shows sleep consistency. Tight box = consistent sleep, dots outside = unusual nights needing attention."),
-        ("sleep_quality_bar", "Sleep Quality Distribution", "💤 Categorizes your sleep into quality levels. Aim for more nights in the 'Good' category."),
-        ("steps_dist_hist", "Daily Steps Distribution", "👟 Shows your typical activity levels. Look for peaks around 8,000-10,000+ steps for optimal health."),
-        ("activity_level_pie", "Activity Level Distribution", "🏃 Breaks down your activity patterns. Aim for larger 'Active' and 'Very Active' slices."),
-        ("water_intake_dist", "Daily Water Intake Distribution", "📊 Shows how consistently you hit your water intake goals. Aim for a peak around 2000ml."),
-        ("water_intake_line", "Daily Water Intake Over Time", "🗓️ Track your daily water consumption trends to ensure consistent hydration."),
-    ]
-    for key, title, caption in detailed_charts:
-        if plotly_figures.get(key):
-            all_figures_for_conversion.append({"fig": plotly_figures[key], "title": title, "caption": caption, "key": key})
-
-
-    # Convert all figures to base64 images with a progress bar
-    chart_images = {}
-    progress_text = "Converting charts to images..."
-    # The progress bar itself will be managed by the calling function (render_export_section)
-    # This function now just performs the conversion.
-    total_charts = len(all_figures_for_conversion)
-
-    # For the full chart-based report, we need to pass the progress bar down
-    # (This assumes the caller creates and passes it, but for self-contained, we recreate here if needed)
-    # For now, let's keep the progress bar generation within this function as it makes more sense
-    # for this specific report type.
-    chart_progress_bar_placeholder = st.empty() # Placeholder for the progress bar
-    chart_progress_bar = chart_progress_bar_placeholder.progress(0, text=progress_text)
-
-
-    for i, chart_info in enumerate(all_figures_for_conversion):
-        progress_percentage = (i + 1) / total_charts
-        chart_progress_bar.progress(progress_percentage, text=f"Converting chart {i + 1}/{total_charts}: {chart_info['title']}...")
-        chart_images[chart_info['key']] = _plotly_fig_to_base64_img(chart_info['fig'], chart_info['key'])
-    chart_progress_bar_placeholder.empty() # Clear the progress bar after completion
-
-
-    # Basic HTML structure and inline CSS for good looks
-    html_content = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Health Report for {username}</title>
-        <style>
-            body {{
-                font-family: 'Inter', sans-serif; /* Using Inter for clean look */
-                margin: 40px;
-                line-height: 1.6;
-                color: #333;
-                background-color: #f9f9f9;
-            }}
-            .container {{
-                max-width: 900px;
-                margin: 0 auto;
-                background-color: #fff;
-                padding: 30px 40px;
-                border-radius: 12px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            }}
-            h1, h2, h3, h4 {{
-                color: #2c3e50;
-                margin-top: 35px;
-                margin-bottom: 15px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid #e0e0e0;
-            }}
-            h1 {{
-                text-align: center;
-                color: #3498db;
-                font-size: 2.5em;
-                border-bottom: 3px solid #3498db;
-                padding-bottom: 10px;
-                margin-bottom: 25px;
-            }}
-            h2 {{ font-size: 1.8em; }}
-            h3 {{ font-size: 1.4em; }}
-            .section-intro {{
-                text-align: center;
-                font-size: 1.1em;
-                color: #666;
-                margin-bottom: 30px;
-            }}
-            .score-card {{
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: space-around;
-                gap: 20px;
-                margin-top: 20px;
-                margin-bottom: 40px;
-            }}
-            .metric-box {{
-                background-color: #eaf6ff; /* Light blue background */
-                padding: 20px;
-                border-radius: 8px;
-                text-align: center;
-                flex: 1 1 calc(20% - 20px); /* Adjust for 5 columns */
-                min-width: 150px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            }}
-            .metric-box h4 {{
-                margin-top: 0;
-                margin-bottom: 10px;
-                color: #34495e;
-                border-bottom: none;
-                font-size: 1.1em;
-            }}
-            .metric-box .value {{
-                font-size: 2.2em;
-                font-weight: bold;
-                color: #2980b9;
-                margin-bottom: 5px;
-            }}
-            .metric-box .sub-value {{
-                font-size: 0.9em;
-                color: #7f8c8d;
-            }}
-            ul {{
-                list-style: none;
-                padding-left: 0;
-            }}
-            ul li {{
-                background-color: #f0fdf4; /* Very light green for insights */
-                margin-bottom: 10px;
-                padding: 12px 20px;
-                border-radius: 8px;
-                border-left: 6px solid #2ecc71; /* Green border */
-                box-shadow: 0 1px 4px rgba(0,0,0,0.03);
-            }}
-            .chart-container {{
-                text-align: center;
-                margin-bottom: 40px;
-                padding: 20px;
-                background-color: #fdfdfd;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            }}
-            .chart-container img {{
-                max-width: 100%;
-                height: auto;
-                border-radius: 6px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.08);
-            }}
-            .chart-caption {{
-                font-size: 0.9em;
-                color: #7f8c8d;
-                margin-top: 10px;
-            }}
-            .data-table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 20px;
-                border-radius: 8px;
-                overflow: hidden; /* Ensures rounded corners */
-            }}
-            .data-table th, .data-table td {{
-                border: 1px solid #eee;
-                padding: 10px 15px;
-                text-align: left;
-            }}
-            .data-table th {{
-                background-color: #f2f2f2;
-                font-weight: bold;
-                color: #555;
-            }}
-            .data-table tr:nth-child(even) {{
-                background-color: #f8f8f8;
-            }}
-            .footer {{
-                text-align: center;
-                margin-top: 60px;
-                font-size: 0.8em;
-                color: #999;
-                padding-top: 20px;
-                border-top: 1px solid #e0e0e0;
-            }}
-            @media print {{
-                body {{
-                    margin: 0;
-                    background-color: #fff;
-                    -webkit-print-color-adjust: exact; /* For better color printing */
-                    print-color-adjust: exact;
-                }}
-                .container {{
-                    box-shadow: none;
-                    margin: 0;
-                    padding: 0;
-                }}
-                h1, h2, h3, h4 {{
-                    page-break-after: avoid; /* Keep headings with content */
-                }}
-                .chart-container {{
-                    page-break-inside: avoid; /* Keep charts on single page */
-                }}
-                ul li {{
-                    page-break-inside: avoid;
-                }}
-            }}
-        </style>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
-    </head>
-    <body>
-        <div class="container">
-            <h1>Comprehensive Health Report</h1>
-            <p class="section-intro">Generated for: <b>{username}</b> on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-
-            <h2>Overall Health Score</h2>
-            <div style="text-align: center; margin-bottom: 30px;">
-                <div style="font-size: 3em; font-weight: bold; color: #27ae60;">{total_score}/100</div>
-                {f'<img src="{chart_images.get("health_score_gauge", "")}" alt="Health Score Gauge" style="width: 250px; height: 250px;">' if chart_images.get("health_score_gauge") else '<p style="color:#aaa;">No health score gauge data.</p>'}
-            </div>
-            <p style="text-align: center; color: #7f8c8d;">
-                This score provides an overall snapshot of your health based on key metrics.
-            </p>
-
-            <h2>Key Metrics Summary</h2>
-            <div class="score-card">
-    """
-    # Add individual score breakdowns
-    html_content += f"""
-                <div class="metric-box">
-                    <h4>Sleep Score</h4>
-                    <div class="value">{score_breakdown.get('sleep', 0)}<span class="sub-value">/25</span></div>
-                </div>
-                <div class="metric-box">
-                    <h4>Activity Score</h4>
-                    <div class="value">{score_breakdown.get('activity', 0)}<span class="sub-value">/25</span></div>
-                </div>
-                <div class="metric-box">
-                    <h4>Hydration Score</h4>
-                    <div class="value">{score_breakdown.get('hydration', 0)}<span class="sub-value">/25</span></div>
-                </div>
-                <div class="metric-box">
-                    <h4>Nutrition Score</h4>
-                    <div class="value">{score_breakdown.get('nutrition', 0)}<span class="sub-value">/25</span></div>
-                </div>
-    """
-    html_content += """
-            </div>
-
-            <h2>Personalized Health Insights</h2>
-    """
-    if insights:
-        html_content += "<ul>"
-        for insight in insights:
-            html_content += f"<li>{insight}</li>"
-        html_content += "</ul>"
-    else:
-        html_content += "<p>No specific insights available. Upload more data for a personalized analysis.</p>"
-
-    html_content += """
-            <h2>Health Trends Over Time</h2>
-    """
-    for chart_info in trend_charts:
-        if chart_images.get(chart_info['key']):
-            html_content += f"""
-            <div class="chart-container">
-                <h3>{chart_info['title']}</h3>
-                <img src="{chart_images.get(chart_info['key'])}" alt="{chart_info['title']}">
-                <p class="chart-caption">{chart_info['caption']}</p>
-            </div>
-            """
-        else:
-            html_content += f"<p class=\"chart-caption\" style=\"text-align: center; color:#aaa;\">No data for {chart_info['title'].lower()}.</p>"
-
-    html_content += """
-            <h2>Weekly Activity Patterns</h2>
-    """
-    for chart_info in pattern_charts:
-        if chart_images.get(chart_info['key']):
-            html_content += f"""
-            <div class="chart-container">
-                <h3>{chart_info['title']}</h3>
-                <img src="{chart_images.get(chart_info['key'])}" alt="{chart_info['title']}">
-                <p class="chart-caption">{chart_info['caption']}</p>
-            </div>
-            """
-        else:
-            html_content += f"<p class=\"chart-caption\" style=\"text-align: center; color:#aaa;\">No data for {chart_info['title'].lower()}.</p>"
-
-    html_content += """
-            <h2>Health Metrics Correlation</h2>
-    """
-    if chart_images.get("correlation_heatmap"):
-        html_content += f"""
-        <div class="chart-container">
-            <h3>Health Metrics Correlation</h3>
-            <img src="{chart_images.get("correlation_heatmap")}" alt="Health Metrics Correlation">
-            <p class="chart-caption">🔗 Discover how your health metrics influence each other. Strong correlations can help you optimize one area to improve another.</p>
-        </div>
-        """
-    else:
-        html_content += "<p class=\"chart-caption\" style=\"text-align: center; color:#aaa;\">Need at least 2 health metrics with data to show correlations.</p>"
-
-    html_content += """
-            <h2>Detailed Data Analysis</h2>
-    """
-    for chart_info in detailed_charts:
-        if chart_images.get(chart_info['key']):
-            html_content += f"""
-            <div class="chart-container">
-                <h3>{chart_info['title']}</h3>
-                <img src="{chart_images.get(chart_info['key'])}" alt="{chart_info['title']}">
-                <p class="chart-caption">{chart_info['caption']}</p>
-            </div>
-            """
-        else:
-            html_content += f"<p class=\"chart-caption\" style=\"text-align: center; color:#aaa;\">No data for {chart_info['title'].lower()}.</p>"
-
-
-    html_content += """
-            <h2>Raw Data Overview (Last 5 entries)</h2>
-    """
-    def df_to_html_safe(df, title):
-        if not df.empty:
-            return f"<h3>{title}</h3>" + df.head(5).to_html(classes="data-table", index=False)
-        return f"<h3>{title}</h3><p style=\"color:#aaa;\">No {title.lower()} data available.</p>"
-
-    html_content += df_to_html_safe(df_sleep, "Sleep Data")
-    html_content += df_to_html_safe(df_food, "Food Intake Data")
-    html_content += df_to_html_safe(df_steps, "Step Count Data")
-    html_content += df_to_html_safe(df_water, "Water Intake Data")
-
-
-    html_content += """
-            <div class="footer">
-                <p>&copy; 2025 Health Dashboard. All rights reserved.</p>
-                <p>Data privacy: Downloaded data remains private on your device. We don't store or share your exported data.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    return html_content
-
 # ===============================
 # SOLUTION 1: TEXT-ONLY REPORT (FASTEST) - Integrated from Claude
 # ===============================
@@ -832,7 +444,7 @@ def generate_text_only_report(df_food, df_sleep, df_steps, df_water, total_score
     return html_content
 
 # ===============================
-# SOLUTION 2: SUMMARY TABLE REPORT (FAST) - Integrated from Claude
+# SOLUTION 2: SUMMARY TABLE REPORT (FAST)
 # ===============================
 
 def generate_table_based_report(df_food, df_sleep, df_steps, df_water, total_score, score_breakdown, insights, username):
@@ -948,7 +560,7 @@ def generate_table_based_report(df_food, df_sleep, df_steps, df_water, total_sco
     return html_content
 
 # ===============================
-# SOLUTION 3: INSTANT MARKDOWN REPORT (SUPER FAST) - Integrated from Claude
+# SOLUTION 3: INSTANT MARKDOWN REPORT (SUPER FAST)
 # ===============================
 
 def generate_markdown_report(df_food, df_sleep, df_steps, df_water, total_score, score_breakdown, insights, username):
@@ -1064,12 +676,13 @@ Based on your health data analysis:
     return report_content
 
 # ===============================
-# MAIN EXPORT FUNCTION WITH OPTIONS
+# MAIN EXPORT FUNCTION WITH OPTIONS (REMOVED TAB4)
 # ===============================
 
 def render_export_section(df_food, df_sleep, df_steps, df_water, total_score, score_breakdown, insights, username, plotly_figures):
     """
-    Renders the data export section with options to download data and generate a health report.
+    Renders the data export section with options to download data and generate health reports.
+    Tab4 (chart export) has been removed as requested.
     """
     st.markdown("---")
     st.markdown("### 📥 Export Your Data")
@@ -1082,12 +695,6 @@ def render_export_section(df_food, df_sleep, df_steps, df_water, total_score, sc
         - **Raw data format** for further analysis in Excel, Google Sheets, or other tools
         - **Date-indexed** for easy time-series analysis
         - **Clean, structured format** ready for use
-
-        **📄 Comprehensive HTML Report (for PDF conversion)**:
-        - **Includes all dashboard visualizations** as static images.
-        - **Provides key metrics and personalized insights**.
-        - Designed for a professional look when converted to PDF.
-        - **How to use**: Click "Generate Health Report (HTML for PDF)", download the `.html` file, open it in your web browser (Chrome, Firefox, Edge, Safari), and then use your browser's "Print" function (usually `Ctrl+P` or `Cmd+P`) to save it as a PDF. Ensure "Print backgrounds" or similar option is enabled in the print dialog for full styling.
 
         **⚡ Fast Reports (No Charts)**:
         - **Instant HTML Report**: A visually appealing HTML report using CSS for elements, no chart images. Fastest for quick summaries.
@@ -1103,8 +710,8 @@ def render_export_section(df_food, df_sleep, df_steps, df_water, total_score, sc
         **Privacy Note**: Downloaded data remains private on your device. We don't store or share your exported data.
         """)
 
-    # Export options in tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["⚡ Instant Report", "📊 Table Report", "📝 Markdown", "📈 With Charts (Slower)"])
+    # Export options in tabs (removed tab4)
+    tab1, tab2, tab3 = st.tabs(["⚡ Instant Report", "📊 Table Report", "📝 Markdown"])
 
     with tab1:
         st.markdown("#### ⚡ Ultra-Fast Visual Report (No Charts)")
@@ -1162,32 +769,12 @@ def render_export_section(df_food, df_sleep, df_steps, df_water, total_score, sc
             st.download_button(
                 label="📥 Download Markdown Report",
                 data=markdown_report,
-                file_name=f"health_report_{username.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md", # Changed extension to .md
-                mime="text/markdown", # Changed MIME type
+                file_name=f"health_report_{username.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                mime="text/markdown",
                 key="download_markdown_report"
             )
 
             st.success("✅ Markdown report generated instantly! Download the .md file to view in any text editor or markdown viewer.")
-
-    with tab4: # This is your original chart-based report section
-        st.markdown("#### 📈 Comprehensive Report (with Charts)")
-        st.markdown("Generates a detailed report with all your dashboard's visualizations. This process might take longer as it converts each chart into an image.")
-
-        # Use a spinner for the entire report generation process for this specific tab
-        # The progress bar is handled inside generate_html_report for the chart conversions
-        if st.button("📊 Generate Health Report (HTML for PDF)", help="Create a comprehensive HTML report of your health data, insights, and visualizations. Open this HTML in your browser and use 'Print to PDF' to save.", key="generate_html_report_button"):
-            with st.spinner("Generating comprehensive health report with charts... This may take a moment."):
-                report_html = generate_html_report(df_food, df_sleep, df_steps, df_water, total_score, score_breakdown, insights, username, plotly_figures)
-                st.download_button(
-                    label="Download Health Report HTML",
-                    data=report_html,
-                    file_name=f"health_report_{username.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                    mime="text/html",
-                    key="download_health_report_html",
-                    help="Click to download the HTML report. Open it in a browser and use 'Print to PDF' to save it as a PDF."
-                )
-                st.success("HTML report generated! Download it, open in your browser, and then use your browser's 'Print to PDF' function to save it as a PDF. Remember to enable 'Print backgrounds' in your browser's print settings for the best visual result.")
-
 
     st.markdown("---")
     st.markdown("#### 📥 Download Individual Data Sets")

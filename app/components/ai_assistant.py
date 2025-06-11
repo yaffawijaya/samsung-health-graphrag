@@ -1,6 +1,7 @@
-# components/ai_assistant.py
+# components/ai_assistant.py - Improved UX with Sample Prompts
 import streamlit as st
 import time
+import os
 from modules.utils.db.db_chat_mysql import (
     get_chat_history, push_chat_message
 )
@@ -10,18 +11,22 @@ def render_ai_assistant():
     # Stylish header
     st.markdown(
         "<h1 style='text-align:center; color:#4B79A1;'>🤖 Your Health AI Assistant</h1>"
-        "<p style='text-align:center; color:gray;'>Ask anything about your health data, and let me provide detailed analysis!</p>",
+        "<p style='text-align:center; color:gray;'>Chat with AI about your health data patterns and get personalized insights!</p>",
         unsafe_allow_html=True
     )
-    st.markdown("---")
 
     # Guard clauses
+    if not st.session_state.get('api_key_valid', False):
+        st.warning("🔑 Please provide your OpenAI API key in the sidebar to use the AI Assistant.")
+        st.info("👈 Look for 'Step 1: OpenAI API Key' in the sidebar to get started.")
+        st.stop()
+
     if not st.session_state.user_id:
-        st.warning("Select a user first.")
+        st.warning("👤 Select a user first in the sidebar.")
         st.stop()
 
     if not st.session_state.session_id:
-        st.warning("Select or create a Chat Session in the sidebar first.")
+        st.warning("💬 Select or create a Chat Session in the sidebar first.")
         st.stop()
 
     sid   = st.session_state.session_id
@@ -31,10 +36,25 @@ def render_ai_assistant():
     # Set user context for health analytics
     set_user_context(user_id, uname)
 
+    # Initialize agent with API key validation
     if st.session_state.agent_executor is None:
-        st.session_state.agent_executor = get_graphrag_agent()
+        try:
+            # Ensure OpenAI API key is set in environment
+            if st.session_state.get('openai_api_key'):
+                os.environ["OPENAI_API_KEY"] = st.session_state.openai_api_key
+            
+            st.session_state.agent_executor = get_graphrag_agent()
+        except ValueError as e:
+            st.error(f"❌ Error initializing AI agent: {str(e)}")
+            st.info("Please check your OpenAI API key and try again.")
+            st.stop()
+        except Exception as e:
+            st.error(f"❌ Unexpected error: {str(e)}")
+            st.stop()
+
     agent = st.session_state.agent_executor
 
+    # Load chat history
     if st.session_state.history_loaded_for != sid:
         hist = get_chat_history(sid)
         st.session_state.chat_history = [
@@ -42,8 +62,72 @@ def render_ai_assistant():
             for row in hist.itertuples()
         ]
         st.session_state.history_loaded_for = sid
+    
+    # API Status indicator
+    if st.session_state.get('openai_api_key'):
+        masked_key = st.session_state.openai_api_key[:8] + "..." + st.session_state.openai_api_key[-4:]
+        st.markdown(
+            f"""
+            <div class="api-status">
+                ✅ AI Assistant Ready | Using API Key: {masked_key} | Analyzing health data for {uname}
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
 
-    # Enhanced chat styling with better visual hierarchy
+    # Sample Prompts Section (ALWAYS visible regardless of session changes)
+    with st.expander("📝 Sample Prompts - Click to Copy", expanded=False):
+        st.markdown("**Copy any prompt below and paste it in the chat to get started:**")
+        
+        # Sample prompts organized by category
+        prompt_categories = {
+            "🛌 Sleep Analysis": [
+                "What does my sleep pattern look like? Are there any concerning trends?",
+                "How consistent is my sleep schedule? What days do I sleep the worst?",
+                "Based on my sleep data, what recommendations do you have for better rest?"
+            ],
+            "🍎 Nutrition & Diet": [
+                "Analyze my food intake patterns. What are my eating habits like?",
+                "What are my most frequently consumed foods and their nutritional impact?",
+                "Are there any patterns between my food choices and other health metrics?"
+            ],
+            "💧 Hydration": [
+                "How is my daily water intake? Am I staying properly hydrated?",
+                "What days do I drink the least water, and how can I improve?",
+                "Is there a correlation between my water intake and activity levels?"
+            ],
+            "🚶 Physical Activity": [
+                "How active am I on average? What's my activity pattern throughout the week?",
+                "What are my most and least active days? How can I be more consistent?",
+                "Compare my step count with health recommendations. Am I meeting fitness goals?"
+            ],
+            "📊 Overall Health": [
+                "Give me a comprehensive analysis of all my health metrics and overall patterns",
+                "What correlations do you see between my sleep, diet, activity, and hydration?",
+                "Based on my data, what are 3 specific areas I should focus on improving?"
+            ]
+        }
+        
+        for category, prompts in prompt_categories.items():
+            st.markdown(f"**{category}**")
+            for i, prompt in enumerate(prompts):
+                # Create a unique key for each prompt
+                prompt_key = f"{category.replace(' ', '_')}_{i}"
+                
+                # Display prompt in a copyable format
+                st.markdown(
+                    f"""
+                    <div class="sample-prompt" onclick="navigator.clipboard.writeText('{prompt}')">
+                        {prompt}
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
+            st.markdown("")  # Add spacing between categories
+        
+        st.info("💡 **Tip:** Click on any prompt above to copy it, then paste it in the chat input below to start your conversation!")
+
+
     chat_style = """
     <style>
         .chat-container {
@@ -90,72 +174,130 @@ def render_ai_assistant():
             border: 1px solid #FFF8E1;
             font-style: italic;
         }
-        .quick-btn {
-            margin: 5px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 2px solid #4B79A1;
-            background: white;
-            color: #4B79A1;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .api-status {
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            text-align: center;
+            border: 1px solid #c3e6cb;
         }
-        .quick-btn:hover {
-            background: #4B79A1;
+        .warning-notice {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #ffc107;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .sample-prompt {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .sample-prompt:hover {
+            background: #e9ecef;
+        }
+        .copy-button {
+            background: #007bff;
             color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .copy-button:hover {
+            background: #0056b3;
         }
     </style>
     """
 
     st.markdown(chat_style, unsafe_allow_html=True)
 
-    # Quick action buttons for common queries
+    
+
+    # Important Warning Notice
+    st.markdown(
+        """
+        <div class="warning-notice">
+            <h4 style="margin-top: 0; color: #856404;">⚠️ Important Medical Disclaimer</h4>
+            <p style="margin-bottom: 0;">
+                <strong>This AI assistant analyzes patterns from your health data and provides insights based on general knowledge.</strong><br>
+                • Recommendations may not meet medical standards and should not replace professional healthcare advice<br>
+                • This is a prototype application for educational and research purposes<br>
+                • <strong>Future work:</strong> Integration with medical research papers for more accurate, evidence-based recommendations<br>
+                • Always consult healthcare professionals for medical decisions and health concerns
+            </p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+    # Sample Prompts Section (only show if no chat history)
     if not st.session_state.chat_history:
-        st.markdown(f"### 💡 Quick Health Insights for {uname}")
-        col1, col2, col3, col4 = st.columns(4)
+        st.markdown(f"### 💬 Start Conversation with {uname}")
         
-        with col1:
-            if st.button("🛌 Sleep Analysis", key="sleep_btn", help="Analyze your sleep patterns and quality"):
-                user_q = "What does my sleep pattern look like?"
-                st.session_state.quick_query = user_q
-        
-        with col2:
-            if st.button("🍎 Nutrition Review", key="nutrition_btn", help="Review your eating habits and nutrition"):
-                user_q = "Analyze my food intake and nutrition"
-                st.session_state.quick_query = user_q
-        
-        with col3:
-            if st.button("💧 Hydration Check", key="water_btn", help="Check your water intake levels"):
-                user_q = "How is my water intake?"
-                st.session_state.quick_query = user_q
-        
-        with col4:
-            if st.button("📊 Health Summary", key="summary_btn", help="Get comprehensive health overview"):
-                user_q = "Give me a comprehensive health analysis"
-                st.session_state.quick_query = user_q
-        
-        # Additional quick buttons
-        col5, col6, col7, col8 = st.columns(4)
-        
-        with col5:
-            if st.button("🚶 Activity Level", key="activity_btn", help="Analyze your step count and activity"):
-                user_q = "How active am I?"
-                st.session_state.quick_query = user_q
-        
-        with col6:
-            if st.button("😴 Sleep Quality", key="sleep_quality_btn", help="Detailed sleep quality assessment"):
-                user_q = "How is my sleep quality?"
-                st.session_state.quick_query = user_q
-        
-        with col7:
-            if st.button("🥗 Eating Habits", key="eating_btn", help="Review your eating patterns"):
-                user_q = "What are my eating habits like?"
-                st.session_state.quick_query = user_q
-                
-        with col8:
-            if st.button("💪 Fitness Goals", key="fitness_btn", help="Check if you're meeting activity goals"):
-                user_q = "Am I getting enough exercise?"
-                st.session_state.quick_query = user_q
+        with st.expander("📝 Sample Prompts - Click to Copy", expanded=True):
+            st.markdown("**Copy any prompt below and paste it in the chat to get started:**")
+            
+            # Sample prompts organized by category
+            prompt_categories = {
+                "🛌 Sleep Analysis": [
+                    "What does my sleep pattern look like? Are there any concerning trends?",
+                    "How consistent is my sleep schedule? What days do I sleep the worst?",
+                    "Based on my sleep data, what recommendations do you have for better rest?"
+                ],
+                "🍎 Nutrition & Diet": [
+                    "Analyze my food intake patterns. What are my eating habits like?",
+                    "What are my most frequently consumed foods and their nutritional impact?",
+                    "Are there any patterns between my food choices and other health metrics?"
+                ],
+                "💧 Hydration": [
+                    "How is my daily water intake? Am I staying properly hydrated?",
+                    "What days do I drink the least water, and how can I improve?",
+                    "Is there a correlation between my water intake and activity levels?"
+                ],
+                "🚶 Physical Activity": [
+                    "How active am I on average? What's my activity pattern throughout the week?",
+                    "What are my most and least active days? How can I be more consistent?",
+                    "Compare my step count with health recommendations. Am I meeting fitness goals?"
+                ],
+                "📊 Overall Health": [
+                    "Give me a comprehensive analysis of all my health metrics and overall patterns",
+                    "What correlations do you see between my sleep, diet, activity, and hydration?",
+                    "Based on my data, what are 3 specific areas I should focus on improving?"
+                ]
+            }
+            
+            for category, prompts in prompt_categories.items():
+                st.markdown(f"**{category}**")
+                for i, prompt in enumerate(prompts):
+                    # Create a unique key for each prompt
+                    prompt_key = f"{category.replace(' ', '_')}_{i}"
+                    
+                    # Display prompt in a copyable format
+                    st.markdown(
+                        f"""
+                        <div class="sample-prompt" onclick="navigator.clipboard.writeText('{prompt}')">
+                            {prompt}
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
+                st.markdown("")  # Add spacing between categories
+            
+            st.info("💡 **Tip:** Click on any prompt above to copy it, then paste it in the chat input below to start your conversation!")
         
         st.markdown("---")
 
@@ -166,22 +308,8 @@ def render_ai_assistant():
         else:
             st.markdown(f"<div class='chat-container'><div class='ai-msg'>{msg['content']}</div></div>", unsafe_allow_html=True)
 
-    # Handle quick query buttons
-    if hasattr(st.session_state, 'quick_query'):
-        user_q = st.session_state.quick_query
-        del st.session_state.quick_query
-        
-        # Process the quick query
-        st.markdown(f"<div class='chat-container'><div class='user-msg'>{user_q}</div></div>", unsafe_allow_html=True)
-        push_chat_message(sid, "user", user_q)
-        st.session_state.chat_history.append({"role": "user", "content": user_q})
-        
-        # Process AI response
-        process_ai_response(user_q, uname, sid, agent)
-        st.rerun()
-
     # New Input
-    user_q = st.chat_input("Ask a question about your health data:")
+    user_q = st.chat_input("Ask a question about your health data or use a sample prompt from above:")
     if user_q:
         # Render user's message
         st.markdown(f"<div class='chat-container'><div class='user-msg'>{user_q}</div></div>", unsafe_allow_html=True)
@@ -194,13 +322,14 @@ def render_ai_assistant():
 def process_ai_response(user_q: str, uname: str, sid: int, agent):
     """
     Process the AI response with enhanced thinking animation and conversation context.
+    Updated with better error handling for API key issues.
     """
     # Enhanced thinking animation
     thinking_container = st.empty()
     thinking_container.markdown(
         """
         <div class='chat-container'><div class='thinking-msg'>
-            <em>🧠 Analyzing your health data<span class='dotting'>.</span></em>
+            <em>🧠 Analyzing your health data with AI<span class='dotting'>.</span></em>
         </div></div>
         <style>
             .dotting::after {
@@ -241,6 +370,10 @@ def process_ai_response(user_q: str, uname: str, sid: int, agent):
         prompt = f"User {uname} asks: {user_q}"
     
     try:
+        # Ensure API key is set
+        if st.session_state.get('openai_api_key'):
+            os.environ["OPENAI_API_KEY"] = st.session_state.openai_api_key
+        
         # Call agent with the context-aware prompt
         res = agent.invoke({"input": prompt})
         ans = res.get("output", "").strip() if res else ""
@@ -250,7 +383,11 @@ def process_ai_response(user_q: str, uname: str, sid: int, agent):
             ans = f"I apologize, but I'm having trouble analyzing your health data right now. Could you try asking about a specific health metric like sleep, nutrition, water intake, or activity level?"
             
     except Exception as e:
-        ans = f"I'm sorry, I encountered an issue while analyzing your health data. Please try asking about a specific health metric like sleep, nutrition, water intake, or steps."
+        error_msg = str(e).lower()
+        if "api" in error_msg and ("key" in error_msg or "authentication" in error_msg):
+            ans = "I'm having trouble with the OpenAI API connection. Please check that your API key is valid and has sufficient credits. You can update your API key in the sidebar."
+        else:
+            ans = f"I'm sorry, I encountered an issue while analyzing your health data. Please try asking about a specific health metric like sleep, nutrition, water intake, or steps."
 
     # Enhanced typing animation
     reply_text = ""

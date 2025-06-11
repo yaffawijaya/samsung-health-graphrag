@@ -1,6 +1,7 @@
 # modules/utils/retrieval/graphrag.py
 """
 GraphRAG module: builds a GraphRAG QA Agent over the Neo4j health graph with natural conversation.
+Updated for deployment with dynamic API key handling.
 """
 import os
 from pathlib import Path
@@ -19,12 +20,9 @@ from langchain.prompts import PromptTemplate
 # Import database utilities
 from modules.utils.db.db_utils_mysql import get_user_data_from_mysql, get_existing_users
 
-# Load secrets from project root
+# Load secrets from project root (excluding OpenAI key)
 BASE_DIR = Path(__file__).parents[3]
 secrets = toml.load(BASE_DIR / "secrets.toml")
-
-# Set OpenAI API key
-os.environ["OPENAI_API_KEY"] = secrets['openai']['OPENAI_API_KEY']
 
 # Database URL for MySQL queries
 cfg = secrets['mysql']
@@ -35,7 +33,7 @@ DB_URL = (
     f"@{cfg['host']}:{cfg['port']}/{cfg['database']}"
 )
 
-# Initialize Neo4jGraph
+# Initialize Neo4jGraph (no API key needed here)
 neo4j_cfg = secrets['neo4j']
 graph = Neo4jGraph(
     url=neo4j_cfg['NEO4J_URI'],
@@ -52,6 +50,13 @@ def set_user_context(user_id: int, username: str):
     global _current_user_id, _current_username
     _current_user_id = user_id
     _current_username = username
+
+def check_openai_api_key():
+    """Check if OpenAI API key is available in environment"""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OpenAI API key not found in environment. Please provide your API key.")
+    return api_key
 
 # Helper function to get health data context
 def get_health_data_summary(user_id: int):
@@ -130,6 +135,12 @@ def natural_health_chat(query: str) -> str:
     """
     global _current_user_id, _current_username
     
+    # Check if API key is available
+    try:
+        check_openai_api_key()
+    except ValueError as e:
+        return "I need an OpenAI API key to analyze your health data. Please provide your API key in the sidebar."
+    
     if not _current_user_id or not _current_username:
         return "I need to know which user's data to analyze. Please make sure you're logged in."
     
@@ -200,7 +211,7 @@ def natural_health_chat(query: str) -> str:
         response = llm.invoke(conversation_prompt)
         return response.content
     except Exception as e:
-        return f"I'm having trouble processing your question right now. Could you try rephrasing it?"
+        return f"I'm having trouble processing your question right now. Could you try rephrasing it? Error: {str(e)}"
 
 @tool("neo4j-graph-chat", return_direct=True)
 def neo4j_graph_chat(query: str) -> str:
@@ -209,6 +220,12 @@ def neo4j_graph_chat(query: str) -> str:
     This provides insights from the graph structure and relationships.
     """
     global _current_username
+    
+    # Check if API key is available
+    try:
+        check_openai_api_key()
+    except ValueError as e:
+        return "I need an OpenAI API key to analyze your health data. Please provide your API key in the sidebar."
     
     try:
         # Enhance the query with user context
@@ -260,13 +277,19 @@ def neo4j_graph_chat(query: str) -> str:
             return "I don't have enough information in the graph database to answer that question. Could you try asking about your sleep, food, water intake, or activity levels?"
             
     except Exception as e:
-        return f"I'm having trouble accessing the graph database right now. Let me try to help with your health data another way."
+        return f"I'm having trouble accessing the graph database right now. Let me try to help with your health data another way. Error: {str(e)}"
 
 # Build the enhanced agent executor
 def get_graphrag_agent():
     """
     Construct and return an AgentExecutor with natural conversation capabilities.
     """
+    # Check if API key is available
+    try:
+        check_openai_api_key()
+    except ValueError as e:
+        raise ValueError("OpenAI API key is required to create the GraphRAG agent. Please provide your API key.")
+    
     llm = ChatOpenAI(temperature=0.6, model_name="gpt-4-0613")  # Higher temperature for more natural responses
     tools = [natural_health_chat, neo4j_graph_chat]
 
