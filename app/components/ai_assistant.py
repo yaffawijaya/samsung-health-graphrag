@@ -244,6 +244,8 @@ def render_ai_assistant():
         unsafe_allow_html=True
     )
 
+    st.markdown("---")
+
     # Sample Prompts Section (only show if no chat history)
     if not st.session_state.chat_history:
         st.markdown(f"### 💬 Start Conversation with {uname}")
